@@ -125,6 +125,9 @@ createSessionProxy <- function(parentSession, ...) {
 #'
 #' @export
 moduleServer <- function(id, module, session = getDefaultReactiveDomain()) {
+  if (inherits(session, "ShinyMockSession")) {
+    module <- patchModule(module, session)
+  }
   callModule(module, id, session = session)
 }
 
@@ -132,7 +135,7 @@ moduleServer <- function(id, module, session = getDefaultReactiveDomain()) {
 #' @rdname moduleServer
 #' @export
 callModule <- function(module, id, ..., session = getDefaultReactiveDomain()) {
-  if (!inherits(session, c("ShinySession", "session_proxy", "MockShinySession"))) {
+  if (!inherits(session, c("ShinySession", "session_proxy"))) {
     stop("session must be a ShinySession or session_proxy object.")
   }
   childScope <- session$makeScope(id)

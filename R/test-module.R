@@ -146,6 +146,30 @@ testServer <- function(expr, appDir=NULL) {
   )
 }
 
+patchModule <- function(func, session) {
+  body(func) <- rlang::expr({
+    base::`<-`(base::`$`(!!session, "env"), base::environment())
+    # Assigning to `$returned` causes a flush to happen automatically.
+    (base::`<-`(base::`$`(!!session, "returned"), {
+       withr::with_options(list(`shiny.allowoutputreads`=TRUE), {
+         !!!body(func)
+       })
+    }))
+  })
+  func
+}
+
+testServer_ <- function(server, expr, ...) {
+  stopifnot(is.function(server))
+  if (!("id" %in% names(formals(server))))
+    stop("Only new-style modules may be tested this way.")
+
+  quosure    <- rlang::enquo(expr)
+  extra_args <- rlang::list2(...)
+  env        <- rlang::caller_env()
+
+}
+
 findApp <- function(startDir="."){
   dir <- normalizePath(startDir)
 
