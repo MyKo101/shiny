@@ -841,7 +841,7 @@ verbatimTextOutput <- function(outputId, placeholder = FALSE) {
 #' @name plotOutput
 #' @rdname plotOutput
 #' @export
-imageOutput <- function(outputId, width = "100%", height="400px",
+imageOutput <- function(outputId, width = "100%", height="400px", aspect.ratio=NULL,
                         click = NULL, dblclick = NULL,
                         hover = NULL, hoverDelay = NULL, hoverDelayType = NULL,
                         brush = NULL,
@@ -877,10 +877,29 @@ imageOutput <- function(outputId, width = "100%", height="400px",
     )
     hover <- hoverOpts(id = hover, delay = hoverDelay, delayType = hoverDelayType)
   }
+  
+  if(!is.null(aspect.ratio)) {
+    aspect.ratio.split <- as.numeric(strsplit("16:9",split=":")[[1]])
+    padding.top <- aspect.ratio.split[2] / aspect.ratio.split[1]
+    padding.top <- paste0(round(100*padding.top,2),"%")
+   
+    if(!is.null(width)) {
+      height <- "auto"
+    } else {
+      width <- "auto"
+      if(is.null(height)) height <- "auto"
+    }
+    aspect.ratio <- NULL
+      
+  } else padding.top <- NULL
 
-  style <- if (!inline) {
-    paste("width:", validateCssUnit(width), ";", "height:", validateCssUnit(height))
+  if (!inline) {
+    style <- paste("width:", validateCssUnit(width), ";", "height:", validateCssUnit(height))
+    if(!is.null(padding.top)) {
+      style <- paste(style,";","padding:",padding.top)
+    }
   }
+  
 
 
   # Build up arguments for call to div() or span()
@@ -889,6 +908,13 @@ imageOutput <- function(outputId, width = "100%", height="400px",
     class = "shiny-image-output",
     style = style
   )
+  
+  if(!is.null(padding.top)){
+    args <- c(args,
+              list(width = width,
+                   height = height,
+                   padding.top = padding.top))
+  }
 
   # Given a named list with options, replace names like "delayType" with
   # "data-hover-delay-type" (given a prefix "hover")
@@ -1041,6 +1067,28 @@ imageOutput <- function(outputId, width = "100%", height="400px",
 #'   }
 #' )
 #'
+#' # A basic shiny app with a specified aspect ratio
+#' shinyApp(
+#'   ui = fluidPage(
+#'     sidebarLayout(
+#'       sidebarPanel(
+#'         actionButton("newplot", "New plot")
+#'       ),
+#'       mainPanel(
+#'         plotOutput("plot",aspect.ratio="16:9")
+#'       )
+#'     )
+#'   ),
+#'   server = function(input, output) {
+#'     output$plot <- renderPlot({
+#'       input$newplot
+#'       # Add a little noise to the cars data
+#'       cars2 <- cars + rnorm(nrow(cars))
+#'       plot(cars2)
+#'     })
+#'   }
+#' )
+#'
 #'
 #' # A demonstration of clicking, hovering, and brushing
 #' shinyApp(
@@ -1174,7 +1222,7 @@ imageOutput <- function(outputId, width = "100%", height="400px",
 #'
 #' }
 #' @export
-plotOutput <- function(outputId, width = "100%", height="400px",
+plotOutput <- function(outputId, width = "100%", height="400px", aspect.ratio=NULL,
                        click = NULL, dblclick = NULL,
                        hover = NULL, hoverDelay = NULL, hoverDelayType = NULL,
                        brush = NULL,
@@ -1182,7 +1230,8 @@ plotOutput <- function(outputId, width = "100%", height="400px",
                        inline = FALSE) {
 
   # Result is the same as imageOutput, except for HTML class
-  res <- imageOutput(outputId, width, height, click, dblclick,
+  res <- imageOutput(outputId, width, height, aspect.ratio,
+                     click, dblclick,
                      hover, hoverDelay, hoverDelayType, brush,
                      clickId, hoverId, inline)
 
